@@ -1,0 +1,20 @@
+[package]
+name = "pargo"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+toml = "0.5"
+seahash = "4"
+anyhow = "1"
+derive-new = "0.5"
+cargo-pargo = { path = "../cargo-pargo" }
+log = "0.4"
+pretty_env_logger = "0.4"
+
+[dependencies.serde]
+version = "1"
+features = [ "derive" ]
+
