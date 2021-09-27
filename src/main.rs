@@ -29,7 +29,7 @@ fn main() {
         let mut should_compile = false;
         if Env::should_update_script(path) {
             log::info!("should update script");
-            fs::copy(pargo["path"].as_str().unwrap(), "target/pargo/src/main.rs").unwrap();
+            fs::copy(pargo["path"].as_str().unwrap(), ".pargo/pargo/src/main.rs").unwrap();
             should_compile = true;
         }
         if Env::should_update_toml() {
@@ -38,21 +38,21 @@ fn main() {
             toml.dependencies = pathify(toml.dependencies);
 
             let mut p: Table =
-                toml::from_slice(&fs::read("target/pargo/Cargo.toml").unwrap()).unwrap();
+                toml::from_slice(&fs::read(".pargo/pargo/Cargo.toml").unwrap()).unwrap();
             p["dependencies"] = Value::Table(toml.dependencies);
             let p = toml::to_string(&p).unwrap();
-            fs::write("target/pargo/Cargo.toml", p).unwrap();
+            fs::write(".pargo/pargo/Cargo.toml", p).unwrap();
             should_compile = true;
         }
         if should_compile {
             log::info!("compiling pargo script");
-            env::set_current_dir("target/pargo").unwrap();
+            env::set_current_dir(".pargo/pargo").unwrap();
             cargo!("build").run().unwrap();
             env::set_current_dir("..").unwrap();
             env::set_current_dir("..").unwrap();
         }
         log::info!("running pargo script");
-        std::process::Command::new("target/pargo/target/debug/pargo")
+        std::process::Command::new(".pargo/pargo/target/debug/pargo")
             .args(args)
             .spawn()
             .unwrap()
@@ -82,23 +82,24 @@ struct Env;
 impl Env {
     fn should_update_script(path: &str) -> bool {
         let first = seahash::hash(&fs::read(path).unwrap());
-        let second = seahash::hash(&fs::read("target/pargo/src/main.rs").unwrap());
+        let second = seahash::hash(&fs::read(".pargo/pargo/src/main.rs").unwrap());
         first != second
     }
     fn should_update_toml() -> bool {
         let mut toml: Registry = toml::from_slice(&fs::read("Pargo.toml").unwrap()).unwrap();
         let pargo_toml: Registry =
-            toml::from_slice(&fs::read("target/pargo/Cargo.toml").unwrap()).unwrap();
+            toml::from_slice(&fs::read(".pargo/pargo/Cargo.toml").unwrap()).unwrap();
         toml.dependencies = pathify(toml.dependencies);
         pargo_toml.dependencies != toml.dependencies
     }
     fn init() {
-        env::set_current_dir("target").unwrap();
+        fs::create_dir(".pargo").ok();
+        env::set_current_dir(".pargo").unwrap();
         cargo!("init", "pargo").run().unwrap();
         env::set_current_dir("..").unwrap();
     }
     fn is_not_init() -> bool {
-        fs::read_dir("target/pargo").is_err()
+        fs::read_dir(".pargo/").is_err()
     }
     fn should_run() -> bool {
         fs::read("Pargo.toml").is_ok()
